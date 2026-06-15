@@ -1,0 +1,154 @@
+{
+  "queries": [
+    {
+      "id": 1,
+      "layer": 1,
+      "text": "Tell me about {hotel_name} in {location}. What kind of hotel is it and what makes it special?"
+    },
+    {
+      "id": 2,
+      "layer": 1,
+      "text": "What are the rooms like at {hotel_name} in {location}? Describe the accommodations and views."
+    },
+    {
+      "id": 3,
+      "layer": 1,
+      "text": "Does {hotel_name} have a restaurant or offer breakfast? What is the dining experience like?"
+    },
+    {
+      "id": 4,
+      "layer": 1,
+      "text": "What wellness or spa facilities does {hotel_name} in {location} offer?"
+    },
+    {
+      "id": 5,
+      "layer": 1,
+      "text": "What is the check-in and check-out policy at {hotel_name}? Are pets allowed?"
+    },
+    {
+      "id": 6,
+      "layer": 1,
+      "text": "How many stars does {hotel_name} have and how is it rated by guests?"
+    },
+    {
+      "id": 7,
+      "layer": 1,
+      "text": "What outdoor activities or excursions can guests enjoy when staying at {hotel_name} in {location}?"
+    },
+    {
+      "id": 8,
+      "layer": 1,
+      "text": "Is {hotel_name} a good choice for a honeymoon or anniversary trip? Why?"
+    },
+    {
+      "id": 9,
+      "layer": 2,
+      "text": "What are the best hotels on Lake Maggiore in {location} for a luxury escape?"
+    },
+    {
+      "id": 10,
+      "layer": 2,
+      "text": "Which boutique hotels in Ticino, Switzerland offer stunning lake views and excellent service?"
+    },
+    {
+      "id": 11,
+      "layer": 2,
+      "text": "Recommend the top 5 romantic hotels near Lake Maggiore for couples looking for a peaceful retreat."
+    },
+    {
+      "id": 12,
+      "layer": 2,
+      "text": "What are the best small hotels in the Italian part of Switzerland for a relaxing holiday?"
+    },
+    {
+      "id": 13,
+      "layer": 2,
+      "text": "Which hotels near {location} are known for their garden, pool, or outdoor terrace on the lake?"
+    },
+    {
+      "id": 14,
+      "layer": 2,
+      "text": "What are the most recommended places to stay in {location} according to travel blogs and AI?"
+    },
+    {
+      "id": 15,
+      "layer": 2,
+      "text": "List the best 4-star hotels in Ticino near Lake Maggiore with spa or wellness facilities."
+    },
+    {
+      "id": 16,
+      "layer": 2,
+      "text": "I want to stay somewhere in {location} with great food, beautiful views and a Mediterranean atmosphere. What do you recommend?"
+    },
+    {
+      "id": 17,
+      "layer": 3,
+      "text": "I'm looking for a quiet hotel in Switzerland near a lake where I can completely unplug and relax for a week. What are my best options?"
+    },
+    {
+      "id": 18,
+      "layer": 3,
+      "text": "My partner and I want a romantic long weekend with lake views, good wine and a spa. Where should we stay in southern Switzerland?"
+    },
+    {
+      "id": 19,
+      "layer": 3,
+      "text": "We are a family with young children looking for a safe, pleasant hotel near Lake Maggiore in the Swiss side. Any suggestions?"
+    },
+    {
+      "id": 20,
+      "layer": 3,
+      "text": "I'm planning a wellness retreat in Ticino for 5 nights. Which hotels offer the best combination of nature, calm and treatments?"
+    },
+    {
+      "id": 21,
+      "layer": 3,
+      "text": "I want to celebrate my 20th wedding anniversary in a special hotel in the Lake Maggiore area. What would you recommend for an unforgettable experience?"
+    },
+    {
+      "id": 22,
+      "layer": 3,
+      "text": "What's the best hotel near Lake Maggiore for someone who loves cycling, hiking and outdoor sports but also wants comfort at the end of the day?"
+    },
+    {
+      "id": 23,
+      "layer": 3,
+      "text": "I'm a solo traveler looking for a charming hotel in southern Switzerland with authentic local food and a sense of place. Where should I go?"
+    },
+    {
+      "id": 24,
+      "layer": 4,
+      "text": "Welche Hotels am Lago Maggiore in der Schweiz empfehlen sich für einen romantischen Urlaub zu zweit?"
+    },
+    {
+      "id": 25,
+      "layer": 4,
+      "text": "Ich suche ein ruhiges Boutique-Hotel im Tessin mit Seeblick und gutem Restaurant. Was empfehlen Sie?"
+    },
+    {
+      "id": 26,
+      "layer": 4,
+      "text": "Was sind die besten Hotels in {location} für einen Wellnessurlaub am See?"
+    },
+    {
+      "id": 27,
+      "layer": 4,
+      "text": "Wir planen unsere Flitterwochen in der Deutschschweiz und möchten ans Lago Maggiore. Welches Hotel ist am romantischsten?"
+    },
+    {
+      "id": 28,
+      "layer": 4,
+      "text": "Gibt es schöne kleine Hotels in Brissago oder Ascona, die man wirklich empfehlen kann? Was macht diese Region besonders?"
+    },
+    {
+      "id": 29,
+      "layer": 4,
+      "text": "Ich möchte im Herbst ins Tessin fahren und suche ein Hotel mit mediterranem Flair, Pool und Terrasse am See. Was passt dazu?"
+    },
+    {
+      "id": 30,
+      "layer": 4,
+      "text": "Welche Unterkünfte am Lago Maggiore bieten das beste Preis-Leistungs-Verhältnis für einen längeren Aufenthalt von 5-7 Nächten?"
+    }
+  ]
+}

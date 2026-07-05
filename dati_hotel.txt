@@ -1,0 +1,69 @@
+# DATI REALI — Garden Hotel Primavera
+# Fonte: GEO Comparative Report v1.0, giugno 2026
+# Usare questo file come riferimento per rilevare allucinazioni nelle risposte AI
+
+## IDENTITÀ
+Nome: Garden Hotel Primavera
+Categoria: 2 stelle
+Indirizzo: Brissago, Lago Maggiore, Ticino, Svizzera
+Posizione: A circa 5 minuti da Ascona
+
+## CARATTERISTICA PRINCIPALE
+Primo e unico hotel 100% vegano e plant-based del Ticino.
+NON è un hotel con opzioni vegane — è interamente vegano.
+
+## COLAZIONE
+- Formato: buffet vegano incluso nel prezzo
+- NON è à la carte
+- NON è su richiesta
+- Il buffet vegano è incluso per tutti gli ospiti
+- Confermato da tutte le 45 recensioni analizzate su Booking.com
+
+## SERVIZI CONFERMATI (da recensioni reali)
+- Pet friendly: cani benvenuti, policy documentata
+- Parcheggio: gratuito, disponibile in loco
+- Yoga e pilates: Sala Magnolia con vista lago, lezioni con Kallu Diamante
+- Vista Lago Maggiore
+- Atmosfera tranquilla, struttura familiare
+- Offerta speciale Under 25
+
+## POSIZIONAMENTO
+- Unico hotel 100% plant-based e vegano del Ticino
+- Target principale: turisti DACH (Germania, Austria, Svizzera tedesca)
+- Mercato vegano e conscious travel in crescita nel segmento DACH
+
+## DATI RECENSIONI (Booking.com via Apify, giugno 2026)
+- Numero recensioni analizzate: 45
+- Rating medio: 8.6 / 10
+- Temi più citati positivamente: tranquillità, vista lago, cucina vegana, accoglienza
+- Keyword frequenti nelle recensioni: famiglia, parcheggio, yoga, ciclismo, tranquillità, Isole di Brissago
+
+## GEO SCORE ATTUALE (baseline, giugno 2026)
+- GEO Score totale: 72/100
+- Brand Accuracy: 84/100
+- Discovery Score: 60/100
+
+## ALLUCINAZIONE DOCUMENTATA
+- AI: Perplexity
+- Errore: descrive la colazione come "à la carte"
+- Realtà: buffet vegano incluso (confermato da tutte le recensioni)
+
+## BLIND SPOT SEMANTICI (keyword presenti nelle recensioni ma assenti nei testi pubblici)
+- Famiglia / Familien
+- Parcheggio / Parkplatz
+- Ciclismo / Radfahren
+- Tranquillità / Ruhe
+- Buffet colazione (presente nelle recensioni, assente nei testi OTA)
+- Isole di Brissago
+
+## PRESENZA WEB
+- Sito: gestito su Hostinger/Zyro
+- OTA principale: Booking.com
+- Google Business Profile: presente
+- Booking.com: descrizioni auto-generate dai tag (non editabili direttamente)
+
+## COSA NON È VERO (da usare per rilevare allucinazioni)
+- La colazione NON è à la carte
+- NON è un hotel con "opzioni vegane" — è interamente vegano
+- NON si trova a Locarno o Ascona — si trova a Brissago
+- NON è un resort o spa — è una struttura 2 stelle familiare

@@ -1,13 +1,13 @@
 import asyncio
-import google.generativeai as genai
+from google import genai
 from config import GEMINI_API_KEY
 
-genai.configure(api_key=GEMINI_API_KEY)
-_model = genai.GenerativeModel("gemini-2.5-flash")
+_client = genai.Client(api_key=GEMINI_API_KEY)
+_MODEL = "gemini-2.5-flash"
 
 
 def _sync_query(prompt: str) -> str:
-    response = _model.generate_content(prompt)
+    response = _client.models.generate_content(model=_MODEL, contents=prompt)
     return response.text
 
 

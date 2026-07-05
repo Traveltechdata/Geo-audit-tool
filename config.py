@@ -14,5 +14,5 @@ def _require(key: str) -> str:
 
 ANTHROPIC_API_KEY = _require("ANTHROPIC_API_KEY")
 OPENAI_API_KEY = _require("OPENAI_API_KEY")
-PERPLEXITY_API_KEY = _require("PERPLEXITY_API_KEY")
+PERPLEXITY_API_KEY = os.getenv("PERPLEXITY_API_KEY")  # optional: Perplexity engine is skipped if unset
 GEMINI_API_KEY = _require("GEMINI_API_KEY")

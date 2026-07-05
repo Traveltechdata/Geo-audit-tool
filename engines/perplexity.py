@@ -5,7 +5,10 @@ from config import PERPLEXITY_API_KEY
 _API_URL = "https://api.perplexity.ai/chat/completions"
 
 
-async def query_perplexity(prompt: str) -> str:
+async def query_perplexity(prompt: str) -> str | None:
+    if not PERPLEXITY_API_KEY:
+        return None
+
     headers = {
         "Authorization": f"Bearer {PERPLEXITY_API_KEY}",
         "Content-Type": "application/json",

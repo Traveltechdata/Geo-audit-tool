@@ -47,13 +47,16 @@ async def _run_query(query_text: str, idx: int, total: int) -> dict:
         return str(r) if isinstance(r, Exception) else r
 
     claude_r, openai_r, perplexity_r, gemini_r = [_safe(r) for r in results]
-    print(f"         ✓ claude | ✓ gpt4o | ✓ perplexity | ✓ gemini")
-    return {
-        "claude": claude_r,
-        "gpt4o": openai_r,
-        "perplexity": perplexity_r,
-        "gemini": gemini_r,
-    }
+
+    responses = {"claude": claude_r, "gpt4o": openai_r}
+    status = ["✓ claude", "✓ gpt4o"]
+    if perplexity_r is not None:
+        responses["perplexity"] = perplexity_r
+        status.append("✓ perplexity")
+    responses["gemini"] = gemini_r
+    status.append("✓ gemini")
+    print(f"         {' | '.join(status)}")
+    return responses
 
 
 async def main():

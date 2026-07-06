@@ -3,6 +3,8 @@ import asyncio
 from engines.claude import query_claude
 
 _ANALYSIS_PROMPT = """You are an expert GEO (Generative Engine Optimization) auditor evaluating how AI models describe a hotel.
+You are a CALIBRATED, FAIR judge — not a strict one. Give credit for partial, generic, or incomplete
+mentions as long as nothing stated is false. Only penalize what is actually wrong, never what is merely absent.
 
 HOTEL NAME: {hotel_name}
 HOTEL LOCATION: {location}
@@ -24,19 +26,34 @@ Evaluate EACH response and return a JSON array (one object per response) with th
   ...
 ]
 
-SCORING RULES for score_contribution (0-10):
-- 0: Hotel not mentioned and response is off-topic
-- 1-3: Hotel not mentioned but response is relevant to the area
-- 4-5: Hotel mentioned but with major inaccuracies or missing key facts
-- 6-7: Hotel mentioned with mostly accurate information
-- 8-9: Hotel mentioned accurately with good descriptive keywords
-- 10: Perfect mention with accurate details, strong discovery keywords, and no hallucinations
+FIELD DEFINITIONS (apply these exactly — do not use stricter criteria):
 
-HALLUCINATION DETECTION: Flag any specific claim that contradicts the verified facts or is clearly invented (wrong star rating, wrong amenities, wrong location, invented awards, etc.).
+hotel_mentioned = true if the hotel appears by full name, partial name, or any clear unambiguous
+reference to it (e.g. a paraphrase, a distinctive feature that identifies it, or a description that
+clearly points to this specific hotel and no other). For Layer 2/3/4 (indirect discovery) queries,
+hotel_mentioned=true also when the hotel is suggested/recommended without being named directly in the
+question. Only set false when the hotel is genuinely absent or a different hotel is the one described.
+
+description_accurate = true UNLESS the response contains at least one claim that actively CONTRADICTS
+the VERIFIED HOTEL FACTS. Do NOT require completeness: omitting details, being generic, or describing
+only part of the hotel is still accurate. Set false only when something stated is demonstrably wrong.
+
+hallucinations = ONLY specific, verifiable claims that DIRECTLY CONTRADICT the VERIFIED HOTEL FACTS
+above (e.g. wrong star category, wrong town/location, breakfast described as à la carte when facts say
+buffet included, invented awards or amenities that facts do not support). NEVER count as a hallucination:
+missing information, generic/marketing language, vague descriptions, or plausible details that the facts
+simply don't mention one way or the other. If VERIFIED HOTEL FACTS says no facts were provided, return
+an empty hallucinations list for that response — there is nothing to verify against.
+
+SCORING RULES for score_contribution (0-10):
+- 0: Hotel not mentioned at all and response is off-topic
+- 1-3: Hotel not mentioned, but response is relevant to the area/category
+- 4-5: Hotel mentioned, but the response contains one or more hallucinations (false claims)
+- 6-7: Hotel mentioned with no hallucinations, even if the description is generic, partial, or thin
+- 8-9: Hotel mentioned accurately (no hallucinations) with good descriptive/discovery keywords
+- 10: Prominent, accurate mention with rich discovery keywords and zero hallucinations
 
 DISCOVERY KEYWORDS: Extract meaningful keywords that would help a traveler discover this hotel (e.g., "lakeside", "boutique", "wellness", "Ticino", "romantic getaway", etc.).
-
-For Layer 2/3/4 queries (indirect discovery), hotel_mentioned=true means the hotel was suggested even without being asked about it directly.
 
 Responses to evaluate:
 {responses}

@@ -10,11 +10,15 @@ def _score_color(score: float) -> str:
 
 
 def _score_label(score: float) -> str:
-    if score >= 70:
-        return "BUONO"
-    elif score >= 40:
-        return "MEDIO"
-    return "CRITICO"
+    if score >= 86:
+        return "Visibilità AI Eccellente"
+    elif score >= 71:
+        return "Visibilità AI Buona"
+    elif score >= 51:
+        return "Visibilità AI Parziale"
+    elif score >= 31:
+        return "Visibilità AI Insufficiente"
+    return "Visibilità AI Critica"
 
 
 def _status_icon(status: str) -> str:

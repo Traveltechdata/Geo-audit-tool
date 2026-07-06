@@ -56,7 +56,8 @@ def _load_queries(queries_path: str, hotel_name: str, location: str) -> list:
     raw_queries = data if isinstance(data, list) else data["queries"]
     queries = []
     for q in raw_queries:
-        text = q["text"].replace("{hotel_name}", hotel_name).replace("{location}", location)
+        raw_text = q.get("query", q.get("text"))
+        text = raw_text.replace("{hotel_name}", hotel_name).replace("{location}", location)
         queries.append({"id": q["id"], "layer": q["layer"], "text": text})
     return queries
 

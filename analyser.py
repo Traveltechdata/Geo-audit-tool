@@ -51,12 +51,11 @@ simply don't mention one way or the other. If VERIFIED HOTEL FACTS says no facts
 an empty hallucinations list for that response — there is nothing to verify against.
 
 SCORING RULES for score_contribution (0-10):
-- 0: Hotel not mentioned at all and response is off-topic
-- 1-3: Hotel not mentioned, but response is relevant to the area/category
-- 4-5: Hotel mentioned, but the response contains one or more hallucinations (false claims)
-- 6-7: Hotel mentioned with no hallucinations, even if the description is generic, partial, or thin
-- 8-9: Hotel mentioned accurately (no hallucinations) with good descriptive/discovery keywords
-- 10: Prominent, accurate mention with rich discovery keywords and zero hallucinations
+- 0: Hotel not mentioned in the response at all
+- 2-3: Hotel mentioned, but with serious errors (major hallucinations that misrepresent the hotel)
+- 4-5: Hotel mentioned, but with some errors (one or more hallucinations, not severe)
+- 6-7: Hotel mentioned correctly (no hallucinations), even if the description is generic, partial, or thin
+- 8-10: Hotel mentioned as the top choice, with accurate and verified details (rich discovery keywords, no hallucinations)
 
 DISCOVERY KEYWORDS: Extract meaningful keywords that would help a traveler discover this hotel (e.g., "lakeside", "boutique", "wellness", "Ticino", "romantic getaway", etc.).
 

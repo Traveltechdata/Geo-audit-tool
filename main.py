@@ -15,8 +15,7 @@ def _slug(name: str) -> str:
     return re.sub(r"[^a-z0-9]+", "_", name.lower()).strip("_")
 
 
-def _load_queries(hotel_name: str, location: str) -> list:
-    queries_path = os.path.join(os.path.dirname(__file__), "queries.json")
+def _load_queries(queries_path: str, hotel_name: str, location: str) -> list:
     with open(queries_path, "r", encoding="utf-8") as f:
         data = json.load(f)
     queries = []
@@ -63,20 +62,35 @@ async def main():
     parser = argparse.ArgumentParser(description="GEO Audit Tool — Analisi AI Visibility per Hotel")
     parser.add_argument("--hotel", required=True, help='Nome hotel (es. "Garden Hotel Primavera")')
     parser.add_argument("--location", required=True, help='Location (es. "Brissago, Lago Maggiore, Ticino")')
-    parser.add_argument("--data", default=None, help="Percorso file .txt con dati verificati dell'hotel")
+    parser.add_argument("--hotel-dir", required=True, dest="hotel_dir",
+                         help="Cartella hotel con dati_hotel.txt, queries.json e recensioni.txt (es. hotels/garden_hotel_primavera/)")
     args = parser.parse_args()
 
     hotel_name = args.hotel
     location = args.location
+    hotel_dir = args.hotel_dir
     hotel_data = ""
 
-    if args.data:
-        if os.path.isfile(args.data):
-            with open(args.data, "r", encoding="utf-8") as f:
-                hotel_data = f.read()
-            print(f"[✓] Dati hotel caricati da: {args.data} ({len(hotel_data)} caratteri)")
-        else:
-            print(f"[⚠] File --data non trovato: {args.data}. Procedo senza dati verificati.")
+    data_path = os.path.join(hotel_dir, "dati_hotel.txt")
+    queries_path = os.path.join(hotel_dir, "queries.json")
+    recensioni_path = os.path.join(hotel_dir, "recensioni.txt")
+
+    if not os.path.isfile(queries_path):
+        sys.exit(f"[✗] File queries.json non trovato in {hotel_dir}. Interruzione.")
+
+    if os.path.isfile(data_path):
+        with open(data_path, "r", encoding="utf-8") as f:
+            hotel_data = f.read()
+        print(f"[✓] Dati hotel caricati da: {data_path} ({len(hotel_data)} caratteri)")
+    else:
+        print(f"[⚠] File dati_hotel.txt non trovato in {hotel_dir}. Procedo senza dati verificati.")
+
+    if os.path.isfile(recensioni_path):
+        with open(recensioni_path, "r", encoding="utf-8") as f:
+            recensioni_data = f.read().strip()
+        if recensioni_data:
+            hotel_data += f"\n\n## RECENSIONI\n{recensioni_data}"
+            print(f"[✓] Recensioni caricate da: {recensioni_path} ({len(recensioni_data)} caratteri)")
 
     print(f"\n{'='*60}")
     print(f"  GEO AUDIT TOOL")
@@ -85,7 +99,7 @@ async def main():
     print(f"  Data: {datetime.now().strftime('%Y-%m-%d %H:%M')}")
     print(f"{'='*60}\n")
 
-    queries = _load_queries(hotel_name, location)
+    queries = _load_queries(queries_path, hotel_name, location)
     total = len(queries)
     print(f"[→] {total} query caricate. Inizio raccolta risposte in parallelo...\n")
 

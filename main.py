@@ -53,8 +53,9 @@ def _load_reviews_csv(csv_path: str) -> str:
 def _load_queries(queries_path: str, hotel_name: str, location: str) -> list:
     with open(queries_path, "r", encoding="utf-8") as f:
         data = json.load(f)
+    raw_queries = data if isinstance(data, list) else data["queries"]
     queries = []
-    for q in data["queries"]:
+    for q in raw_queries:
         text = q["text"].replace("{hotel_name}", hotel_name).replace("{location}", location)
         queries.append({"id": q["id"], "layer": q["layer"], "text": text})
     return queries

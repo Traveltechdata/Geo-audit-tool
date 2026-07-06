@@ -98,11 +98,16 @@ def generate_report(hotel_name: str, location: str, analysed_results: dict, scor
             if key not in seen:
                 seen.add(key)
                 unique_strengths.append(s)
-        items = "".join(
-            f"<li><strong>{engine_labels.get(s['engine'], s['engine'])}</strong> — \"{s['query']}\" "
-            f"{'<span class=\"kw-tag\">' + '</span> <span class=\"kw-tag\">'.join(s['keywords'][:4]) + '</span>' if s['keywords'] else ''}</li>"
-            for s in unique_strengths[:10]
-        )
+        item_parts = []
+        for s in unique_strengths[:10]:
+            engine_label = engine_labels.get(s["engine"], s["engine"])
+            query_text = s["query"]
+            if s["keywords"]:
+                kw_html = '<span class="kw-tag">' + '</span> <span class="kw-tag">'.join(s["keywords"][:4]) + '</span>'
+            else:
+                kw_html = ''
+            item_parts.append(f'<li><strong>{engine_label}</strong> — "{query_text}" {kw_html}</li>')
+        items = "".join(item_parts)
         strengths_html = f"<ul class='strengths-list'>{items}</ul>"
     else:
         strengths_html = "<p>Nessun punto di forza eccellente rilevato. Opportunità di miglioramento significative.</p>"

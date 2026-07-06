@@ -95,7 +95,7 @@ async def analyse_results(raw_results: dict, hotel_data: str = "") -> dict:
 
         print(f"  [Analyser] Query {idx}/{total}: analysing {len(responses)} responses...", end=" ", flush=True)
 
-        raw_analysis = await query_claude(prompt, model="claude-sonnet-4-6")
+        raw_analysis = await query_claude(prompt, model="claude-sonnet-4-6", use_web_search=False)
 
         analysis_list = _parse_analysis(raw_analysis, list(responses.keys()))
 

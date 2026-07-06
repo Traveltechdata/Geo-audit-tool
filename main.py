@@ -1,5 +1,6 @@
 import argparse
 import asyncio
+import csv
 import json
 import os
 import re
@@ -10,9 +11,75 @@ from analyser import analyse_results
 from scorer import compute_geo_score
 from report import generate_report
 
+# Column name variants seen across different exports of the Apify Booking
+# Reviews Scraper actor — matched case-insensitively against the CSV header.
+_CSV_TEXT_FIELDS = ["text", "reviewtext", "review_text", "comment", "reviewcomment"]
+_CSV_LIKED_FIELDS = ["likedtext", "liked_text", "positivetext", "pros"]
+_CSV_DISLIKED_FIELDS = ["dislikedtext", "disliked_text", "negativetext", "cons"]
+_CSV_RATING_FIELDS = ["rating", "reviewrating", "score", "reviewscore"]
+_CSV_TITLE_FIELDS = ["reviewtitle", "title", "reviewheadline", "headline"]
+_CSV_LANG_FIELDS = ["language", "reviewerlanguage", "lang", "reviewlanguage"]
+
+_CSV_MAX_REVIEWS = 100
+
 
 def _slug(name: str) -> str:
     return re.sub(r"[^a-z0-9]+", "_", name.lower()).strip("_")
+
+
+def _csv_field(row: dict, candidates: list) -> str:
+    lower_row = {k.lower(): v for k, v in row.items() if k}
+    for name in candidates:
+        value = lower_row.get(name)
+        if value and str(value).strip():
+            return str(value).strip()
+    return ""
+
+
+def _csv_review_text(row: dict) -> str:
+    text = _csv_field(row, _CSV_TEXT_FIELDS)
+    if text:
+        return text
+    liked = _csv_field(row, _CSV_LIKED_FIELDS)
+    disliked = _csv_field(row, _CSV_DISLIKED_FIELDS)
+    parts = []
+    if liked:
+        parts.append(f"Positivo: {liked}")
+    if disliked:
+        parts.append(f"Negativo: {disliked}")
+    return " / ".join(parts)
+
+
+def _load_reviews_csv(csv_path: str) -> str:
+    with open(csv_path, "r", newline="", encoding="utf-8-sig") as f:
+        rows = list(csv.DictReader(f))
+
+    if not rows:
+        return ""
+
+    blocks = []
+    for i, row in enumerate(rows[:_CSV_MAX_REVIEWS], 1):
+        rating = _csv_field(row, _CSV_RATING_FIELDS)
+        title = _csv_field(row, _CSV_TITLE_FIELDS)
+        language = _csv_field(row, _CSV_LANG_FIELDS)
+        text = _csv_review_text(row)
+
+        meta = " | ".join(
+            part for part in [f"Rating: {rating}" if rating else "", f"Lingua: {language}" if language else ""]
+            if part
+        )
+        header = f"### Recensione {i}" + (f" ({meta})" if meta else "")
+        block = [header]
+        if title:
+            block.append(f"Titolo: {title}")
+        if text:
+            block.append(f"Testo: {text}")
+        blocks.append("\n".join(block))
+
+    body = "\n\n".join(blocks)
+    if len(rows) > _CSV_MAX_REVIEWS:
+        body += f"\n\n[...{len(rows) - _CSV_MAX_REVIEWS} recensioni aggiuntive omesse per brevità...]"
+    return body
 
 
 def _load_queries(queries_path: str, hotel_name: str, location: str) -> list:
@@ -63,7 +130,7 @@ async def main():
     parser.add_argument("--hotel", required=True, help='Nome hotel (es. "Garden Hotel Primavera")')
     parser.add_argument("--location", required=True, help='Location (es. "Brissago, Lago Maggiore, Ticino")')
     parser.add_argument("--hotel-dir", required=True, dest="hotel_dir",
-                         help="Cartella hotel con dati_hotel.txt, queries.json e recensioni.txt (es. hotels/garden_hotel_primavera/)")
+                         help="Cartella hotel con dati_hotel.txt, queries.json, recensioni.txt e recensioni.csv (es. hotels/garden_hotel_primavera/)")
     args = parser.parse_args()
 
     hotel_name = args.hotel
@@ -74,6 +141,7 @@ async def main():
     data_path = os.path.join(hotel_dir, "dati_hotel.txt")
     queries_path = os.path.join(hotel_dir, "queries.json")
     recensioni_path = os.path.join(hotel_dir, "recensioni.txt")
+    recensioni_csv_path = os.path.join(hotel_dir, "recensioni.csv")
 
     if not os.path.isfile(queries_path):
         sys.exit(f"[✗] File queries.json non trovato in {hotel_dir}. Interruzione.")
@@ -91,6 +159,12 @@ async def main():
         if recensioni_data:
             hotel_data += f"\n\n## RECENSIONI\n{recensioni_data}"
             print(f"[✓] Recensioni caricate da: {recensioni_path} ({len(recensioni_data)} caratteri)")
+
+    if os.path.isfile(recensioni_csv_path):
+        reviews_block = _load_reviews_csv(recensioni_csv_path)
+        if reviews_block:
+            hotel_data += f"\n\n## RECENSIONI REALI (Booking.com, via Apify)\n{reviews_block}"
+            print(f"[✓] Recensioni CSV caricate da: {recensioni_csv_path}")
 
     print(f"\n{'='*60}")
     print(f"  GEO AUDIT TOOL")

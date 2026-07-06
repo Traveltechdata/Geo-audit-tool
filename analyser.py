@@ -11,6 +11,11 @@ HOTEL LOCATION: {location}
 VERIFIED HOTEL FACTS:
 {hotel_data}
 
+VERIFIED HOTEL FACTS may include real guest review excerpts (from Booking.com, via Apify). Treat these
+reviews as equally authoritative ground truth alongside the rest of the facts: use them to catch
+hallucinations (a response contradicting what guests actually report) and blind spots (a widely-confirmed
+detail from the reviews that AI responses consistently omit).
+
 Below are AI responses to the query: "{query}"
 
 Evaluate EACH response and return a JSON array (one object per response) with this exact structure:

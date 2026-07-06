@@ -11,43 +11,13 @@ from analyser import analyse_results
 from scorer import compute_geo_score
 from report import generate_report
 
-# Column name variants seen across different exports of the Apify Booking
-# Reviews Scraper actor — matched case-insensitively against the CSV header.
-_CSV_TEXT_FIELDS = ["text", "reviewtext", "review_text", "comment", "reviewcomment"]
-_CSV_LIKED_FIELDS = ["likedtext", "liked_text", "positivetext", "pros"]
-_CSV_DISLIKED_FIELDS = ["dislikedtext", "disliked_text", "negativetext", "cons"]
-_CSV_RATING_FIELDS = ["rating", "reviewrating", "score", "reviewscore"]
-_CSV_TITLE_FIELDS = ["reviewtitle", "title", "reviewheadline", "headline"]
-_CSV_LANG_FIELDS = ["language", "reviewerlanguage", "lang", "reviewlanguage"]
-
+# recensioni.csv fields: rating, reviewTitle, likedText, dislikedText,
+# reviewDate, numberOfNights, travelerType, userName
 _CSV_MAX_REVIEWS = 100
 
 
 def _slug(name: str) -> str:
     return re.sub(r"[^a-z0-9]+", "_", name.lower()).strip("_")
-
-
-def _csv_field(row: dict, candidates: list) -> str:
-    lower_row = {k.lower(): v for k, v in row.items() if k}
-    for name in candidates:
-        value = lower_row.get(name)
-        if value and str(value).strip():
-            return str(value).strip()
-    return ""
-
-
-def _csv_review_text(row: dict) -> str:
-    text = _csv_field(row, _CSV_TEXT_FIELDS)
-    if text:
-        return text
-    liked = _csv_field(row, _CSV_LIKED_FIELDS)
-    disliked = _csv_field(row, _CSV_DISLIKED_FIELDS)
-    parts = []
-    if liked:
-        parts.append(f"Positivo: {liked}")
-    if disliked:
-        parts.append(f"Negativo: {disliked}")
-    return " / ".join(parts)
 
 
 def _load_reviews_csv(csv_path: str) -> str:
@@ -59,21 +29,19 @@ def _load_reviews_csv(csv_path: str) -> str:
 
     blocks = []
     for i, row in enumerate(rows[:_CSV_MAX_REVIEWS], 1):
-        rating = _csv_field(row, _CSV_RATING_FIELDS)
-        title = _csv_field(row, _CSV_TITLE_FIELDS)
-        language = _csv_field(row, _CSV_LANG_FIELDS)
-        text = _csv_review_text(row)
+        rating = (row.get("rating") or "").strip()
+        title = (row.get("reviewTitle") or "").strip()
+        liked = (row.get("likedText") or "").strip()
+        disliked = (row.get("dislikedText") or "").strip()
 
-        meta = " | ".join(
-            part for part in [f"Rating: {rating}" if rating else "", f"Lingua: {language}" if language else ""]
-            if part
-        )
-        header = f"### Recensione {i}" + (f" ({meta})" if meta else "")
+        header = f"### Recensione {i}" + (f" (Rating: {rating})" if rating else "")
         block = [header]
         if title:
             block.append(f"Titolo: {title}")
-        if text:
-            block.append(f"Testo: {text}")
+        if liked:
+            block.append(f"Positivo: {liked}")
+        if disliked:
+            block.append(f"Negativo: {disliked}")
         blocks.append("\n".join(block))
 
     body = "\n\n".join(blocks)
@@ -163,7 +131,7 @@ async def main():
     if os.path.isfile(recensioni_csv_path):
         reviews_block = _load_reviews_csv(recensioni_csv_path)
         if reviews_block:
-            hotel_data += f"\n\n## RECENSIONI REALI (Booking.com, via Apify)\n{reviews_block}"
+            hotel_data += f"\n\n## RECENSIONI REALI OSPITI\n{reviews_block}"
             print(f"[✓] Recensioni CSV caricate da: {recensioni_csv_path}")
 
     print(f"\n{'='*60}")

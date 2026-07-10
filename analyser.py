@@ -3,18 +3,15 @@ import asyncio
 from engines.claude import query_claude
 
 _ANALYSIS_PROMPT = """You are an expert GEO (Generative Engine Optimization) auditor evaluating how AI models describe a hotel.
-You are a CALIBRATED, FAIR judge — not a strict one. Give credit for partial, generic, or incomplete
-mentions as long as nothing stated is false. Only penalize what is actually wrong, never what is merely absent.
 
 HOTEL NAME: {hotel_name}
 HOTEL LOCATION: {location}
 VERIFIED HOTEL FACTS:
 {hotel_data}
 
-VERIFIED HOTEL FACTS may include real guest review excerpts (from Booking.com, via Apify). Treat these
-reviews as equally authoritative ground truth alongside the rest of the facts: use them to catch
-hallucinations (a response contradicting what guests actually report) and blind spots (a widely-confirmed
-detail from the reviews that AI responses consistently omit).
+VERIFIED HOTEL FACTS may include real guest review excerpts (from Booking.com / Google Maps, via Apify).
+Treat these reviews as equally authoritative ground truth: use them to catch hallucinations (a response
+contradicting what guests actually report) and blind spots (a widely-confirmed detail the AI omits).
 
 Below are AI responses to the query: "{query}"
 
@@ -31,38 +28,61 @@ Evaluate EACH response and return a JSON array (one object per response) with th
   ...
 ]
 
-FIELD DEFINITIONS (apply these exactly — do not use stricter criteria):
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+FIELD DEFINITIONS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-hotel_mentioned = true if the hotel appears by full name, partial name, or any clear unambiguous
-reference to it (e.g. a paraphrase, a distinctive feature that identifies it, or a description that
-clearly points to this specific hotel and no other). For Layer 2/3/4 (indirect discovery) queries,
-hotel_mentioned=true also when the hotel is suggested/recommended without being named directly in the
-question. Only set false when the hotel is genuinely absent or a different hotel is the one described.
+hotel_mentioned = true ONLY when the hotel is explicitly named (full name, partial name, or an
+unambiguous reference that could not apply to any other hotel). For Layer 2/3/4 discovery queries,
+true also when the hotel is recommended/suggested without being named in the question itself.
+Set false whenever the hotel is completely absent from the response — do NOT set true just because
+the response mentions the region or general hotel categories.
 
-description_accurate = true UNLESS the response contains at least one claim that actively CONTRADICTS
-the VERIFIED HOTEL FACTS. Do NOT require completeness: omitting details, being generic, or describing
-only part of the hotel is still accurate. Set false only when something stated is demonstrably wrong.
+description_accurate = true UNLESS at least one claim actively CONTRADICTS the VERIFIED HOTEL FACTS
+(wrong star rating, wrong town, wrong amenity, etc.). Omitting details or being generic is still accurate.
+If hotel_mentioned is false, set description_accurate to false as well.
 
-hallucinations = ONLY specific, verifiable claims that DIRECTLY CONTRADICT the VERIFIED HOTEL FACTS
-above (e.g. wrong star category, wrong town/location, breakfast described as à la carte when facts say
-buffet included, invented awards or amenities that facts do not support). NEVER count as a hallucination:
-missing information, generic/marketing language, vague descriptions, or plausible details that the facts
-simply don't mention one way or the other. If VERIFIED HOTEL FACTS says no facts were provided, return
-an empty hallucinations list for that response — there is nothing to verify against.
+hallucinations = list of specific claims that DIRECTLY CONTRADICT the VERIFIED HOTEL FACTS.
+Do NOT flag: missing info, generic language, vague descriptions, or plausible details not mentioned
+in the facts. If no verified facts were provided, always return an empty list.
 
-SCORING RULES for score_contribution (0-10):
-- 0: Hotel not mentioned in the response at all
-- 2-3: Hotel mentioned, but with serious errors (major hallucinations that misrepresent the hotel)
-- 4-5: Hotel mentioned, but with some errors (one or more hallucinations, not severe)
-- 6-7: Hotel mentioned correctly (no hallucinations), even if the description is generic, partial, or thin
-- 8-10: Hotel mentioned as the top choice, with accurate and verified details (rich discovery keywords, no hallucinations)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SCORING SCALE — score_contribution (integer 0–10)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-DISCOVERY KEYWORDS: Extract meaningful keywords that would help a traveler discover this hotel (e.g., "lakeside", "boutique", "wellness", "Ticino", "romantic getaway", etc.).
+!! CRITICAL RULE: if hotel_mentioned is false, score_contribution MUST be 0. No exceptions. !!
+Do not assign 1, 2, or any positive value when the hotel is absent from the response.
+
+When hotel_mentioned is true, apply this scale:
+
+  9–10  Hotel cited first or as the top recommendation; information accurate and verified against
+        facts; no hallucinations; rich discovery keywords present.
+
+  7–8   Hotel cited clearly; information substantially correct; at most minor omissions or
+        imprecisions that do not contradict the facts; no hallucinations.
+
+  5–6   Hotel cited; some inaccuracies present that are not severe (e.g. one minor error or a
+        claim the facts do not support but do not explicitly contradict).
+
+  3–4   Hotel cited but with serious errors: one or more hallucinations that materially
+        misrepresent the hotel (wrong location, wrong category, invented major amenity).
+
+  1–2   Hotel cited but the response is predominantly false or contradicts the facts on
+        multiple key points.
+
+  0     Hotel NOT cited — mandatory regardless of layer.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+DISCOVERY KEYWORDS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Extract only keywords that actually appear (or are clearly implied) in the response and would help
+a traveler discover this hotel (e.g. "lakeside", "boutique", "wellness", "Ticino", "romantic getaway").
+Return an empty list when hotel_mentioned is false.
 
 Responses to evaluate:
 {responses}
 
-Return ONLY valid JSON array, no markdown, no explanation."""
+Return ONLY a valid JSON array. No markdown fences, no explanation, no extra text."""
 
 
 async def analyse_results(raw_results: dict, hotel_data: str = "") -> dict:
@@ -132,10 +152,27 @@ def _parse_analysis(raw: str, engines: list) -> list:
                 raw = raw[4:]
         data = json.loads(raw)
         if isinstance(data, list):
-            return data
+            return [_enforce_rules(item) for item in data]
         return [_default_analysis(e) for e in engines]
     except (json.JSONDecodeError, Exception):
         return [_default_analysis(e) for e in engines]
+
+
+def _enforce_rules(item: dict) -> dict:
+    """
+    Hard-enforce scoring rules that the LLM judge may occasionally violate:
+    - score_contribution must be 0 when hotel_mentioned is false
+    - discovery_keywords_present must be empty when hotel_mentioned is false
+    - score_contribution must be clamped to [0, 10]
+    """
+    if not item.get("hotel_mentioned", False):
+        item["score_contribution"] = 0
+        item["discovery_keywords_present"] = []
+        item["description_accurate"] = False
+    else:
+        score = item.get("score_contribution", 0)
+        item["score_contribution"] = max(0, min(10, int(score)))
+    return item
 
 
 def _default_analysis(engine: str) -> dict:

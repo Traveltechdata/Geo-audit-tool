@@ -116,9 +116,47 @@ def generate_report(hotel_name: str, location: str, analysed_results: dict, scor
     else:
         strengths_html = "<p>Nessun punto di forza eccellente rilevato. Opportunità di miglioramento significative.</p>"
 
-    # Full responses section — no truncation
+    # Full responses section
     import html as _html
+    _PREVIEW_LEN = 600
     _engine_order = ["claude", "gpt4o", "perplexity", "gemini"]
+
+    def _extract_sources(eng_data: dict, eng: str) -> list[str]:
+        """
+        Estrae le fonti web dalla risposta in base all'engine.
+        Cerca nei campi: sources, citations, grounding_chunks, web_search_results,
+        e anche righe [Fonte web] già formattate nel testo della risposta.
+        Ritorna lista di stringhe "Titolo — url" o solo url.
+        """
+        sources = []
+        if not isinstance(eng_data, dict):
+            return sources
+
+        # Campi strutturati presenti nel JSON a seconda dell'engine
+        for field in ("sources", "citations", "grounding_chunks", "web_search_results", "references"):
+            raw = eng_data.get(field)
+            if not raw:
+                continue
+            if isinstance(raw, list):
+                for item in raw:
+                    if isinstance(item, dict):
+                        title = (item.get("title") or item.get("name") or "").strip()
+                        url = (item.get("url") or item.get("uri") or item.get("link") or "").strip()
+                        if url:
+                            sources.append(f"{title} — {url}" if title else url)
+                    elif isinstance(item, str) and item.startswith("http"):
+                        sources.append(item)
+
+        # Fallback: estrai righe "[Fonte web] ..." già nel testo della risposta
+        if not sources:
+            text = eng_data.get("response", "")
+            for line in text.splitlines():
+                line = line.strip()
+                if line.startswith("[Fonte web]"):
+                    sources.append(line[len("[Fonte web]"):].strip())
+
+        return sources
+
     all_responses_html = ""
     for idx, item in enumerate(analysed_results["results"], 1):
         layer = item["layer"]
@@ -134,26 +172,35 @@ def generate_report(hotel_name: str, location: str, analysed_results: dict, scor
             score = analysis.get("score_contribution", "—")
             mentioned = analysis.get("hotel_mentioned", False)
             status_icon = "✅" if mentioned and analysis.get("description_accurate") else ("⚠️" if mentioned else "❌")
-            safe_text = _html.escape(raw_text)
-            _PREVIEW_LEN = 800
+
+            # Testo con troncamento a 600 caratteri
             if len(raw_text) > _PREVIEW_LEN:
                 safe_preview = _html.escape(raw_text[:_PREVIEW_LEN])
-                blocks += f"""
-            <div class="response-block engine-{eng}">
-              <div class="response-engine-label">{engine_labels.get(eng, eng)}</div>
-              <div class="response-text">
-                <span class="resp-preview">{safe_preview}</span><span class="resp-rest" style="display:none">{safe_text[_PREVIEW_LEN:]}</span><span class="resp-ellipsis">…</span>
-                <a href="#" class="read-more-link" onclick="toggleResp(this);return false;"> [leggi tutto]</a>
-              </div>
-              <span class="response-score">{status_icon} score {score}/10</span>
-            </div>"""
+                safe_rest = _html.escape(raw_text[_PREVIEW_LEN:])
+                text_html = f"""<span class="resp-preview">{safe_preview}</span><span class="resp-ellipsis">… </span><button class="read-more-btn" onclick="toggleResp(this)">Leggi tutto ▼</button><span class="resp-rest" style="display:none">{safe_rest}</span>"""
             else:
-                blocks += f"""
+                text_html = _html.escape(raw_text)
+
+            # Fonti web
+            sources = _extract_sources(eng_data, eng)
+            sources_html = ""
+            if sources:
+                items_html = "".join(
+                    f'<li>[Fonte {i}] {_html.escape(s.split(" — ")[0])} — <a href="{_html.escape(s.split(" — ")[-1])}" target="_blank" rel="noopener">{_html.escape(s.split(" — ")[-1])}</a></li>'
+                    if " — " in s else
+                    f'<li>[Fonte {i}] <a href="{_html.escape(s)}" target="_blank" rel="noopener">{_html.escape(s)}</a></li>'
+                    for i, s in enumerate(sources, 1)
+                )
+                sources_html = f'<ul class="sources-list">{items_html}</ul>'
+
+            blocks += f"""
             <div class="response-block engine-{eng}">
               <div class="response-engine-label">{engine_labels.get(eng, eng)}</div>
-              <div class="response-text">{safe_text}</div>
+              <div class="response-text">{text_html}</div>
+              {sources_html}
               <span class="response-score">{status_icon} score {score}/10</span>
             </div>"""
+
         summary_label = f"Query {idx:02d} {layer_badge} — {_html.escape(query_text[:100])}{'…' if len(query_text) > 100 else ''}"
         all_responses_html += f"""
         <details>
@@ -254,8 +301,14 @@ def generate_report(hotel_name: str, location: str, analysed_results: dict, scor
                       word-break: break-word; line-height: 1.55; }}
     .response-score {{ display: inline-block; margin-top: 8px; font-size: 0.78em;
                        background: #ecf0f1; border-radius: 4px; padding: 2px 7px; color: #555; }}
-    .read-more-link {{ font-size: 0.82em; color: #2980b9; text-decoration: none; white-space: nowrap; }}
-    .read-more-link:hover {{ text-decoration: underline; }}
+    .read-more-btn {{ font-size: 0.8em; color: #2980b9; background: none; border: 1px solid #aed6f1;
+                      border-radius: 4px; padding: 1px 7px; cursor: pointer; white-space: nowrap;
+                      margin-left: 2px; vertical-align: baseline; }}
+    .read-more-btn:hover {{ background: #eaf4fb; }}
+    .sources-list {{ list-style: none; margin-top: 8px; padding: 6px 10px;
+                     background: #f0f4f8; border-radius: 4px; font-size: 0.78em; }}
+    .sources-list li {{ padding: 2px 0; color: #555; }}
+    .sources-list a {{ color: #2980b9; word-break: break-all; }}
     @media (max-width: 700px) {{
       .score-cards, .engine-cards {{ flex-direction: column; }}
       .geo-badge {{ font-size: 2em; padding: 15px 25px; }}
@@ -372,19 +425,14 @@ def generate_report(hotel_name: str, location: str, analysed_results: dict, scor
 </div>
 
 <script>
-function toggleResp(link) {{
-  var block = link.parentElement;
+function toggleResp(btn) {{
+  var block = btn.parentElement;
   var rest = block.querySelector('.resp-rest');
   var ellipsis = block.querySelector('.resp-ellipsis');
-  if (rest.style.display === 'none') {{
-    rest.style.display = 'inline';
-    ellipsis.style.display = 'none';
-    link.textContent = ' [mostra meno]';
-  }} else {{
-    rest.style.display = 'none';
-    ellipsis.style.display = 'inline';
-    link.textContent = ' [leggi tutto]';
-  }}
+  var expanded = rest.style.display !== 'none';
+  rest.style.display = expanded ? 'none' : 'inline';
+  ellipsis.style.display = expanded ? 'inline' : 'none';
+  btn.textContent = expanded ? 'Leggi tutto ▼' : 'Chiudi ▲';
 }}
 </script>
 

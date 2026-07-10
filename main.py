@@ -101,6 +101,8 @@ async def main():
     parser.add_argument("--location", required=True, help='Location (es. "Brissago, Lago Maggiore, Ticino")')
     parser.add_argument("--hotel-dir", required=True, dest="hotel_dir",
                          help="Cartella hotel con dati_hotel.txt, queries.json, recensioni.txt e recensioni.csv (es. hotels/garden_hotel_primavera/)")
+    parser.add_argument("--test-mode", action="store_true",
+                        help="Usa solo le prime 3 query (debug rapido, riduce costi API)")
     args = parser.parse_args()
 
     hotel_name = args.hotel
@@ -144,6 +146,9 @@ async def main():
     print(f"{'='*60}\n")
 
     queries = _load_queries(queries_path, hotel_name, location)
+    if args.test_mode:
+        queries = queries[:3]
+        print(f"[⚡] TEST MODE — usando solo le prime 3 query su {len(_load_queries(queries_path, hotel_name, location))}")
     total = len(queries)
     print(f"[→] {total} query caricate. Inizio raccolta risposte in parallelo...\n")
 

@@ -61,6 +61,7 @@ async def main():
     parser.add_argument("--hotel", required=True, help='Nome hotel (es. "Garden Hotel Primavera")')
     parser.add_argument("--location", required=True, help='Location (es. "Brissago, Lago Maggiore, Ticino")')
     parser.add_argument("--data", default=None, help="Percorso file .txt con dati verificati dell'hotel")
+    parser.add_argument("--test-mode", action="store_true", help="Usa solo le prime 3 query (per debug rapido)")
     args = parser.parse_args()
 
     hotel_name = args.hotel
@@ -83,6 +84,9 @@ async def main():
     print(f"{'='*60}\n")
 
     queries = _load_queries(hotel_name, location)
+    if args.test_mode:
+        queries = queries[:3]
+        print(f"[⚡] TEST MODE attivo — usando solo le prime 3 query su {len(_load_queries(hotel_name, location))}")
     total = len(queries)
     print(f"[→] {total} query caricate. Inizio raccolta risposte in parallelo...\n")
 

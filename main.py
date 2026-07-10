@@ -1,6 +1,7 @@
 import argparse
 import asyncio
 import csv
+import glob
 import json
 import os
 import re
@@ -48,6 +49,88 @@ def _load_reviews_csv(csv_path: str) -> str:
     if len(rows) > _CSV_MAX_REVIEWS:
         body += f"\n\n[...{len(rows) - _CSV_MAX_REVIEWS} recensioni aggiuntive omesse per brevità...]"
     return body
+
+
+_JSON_MAX_REVIEWS = 100
+
+
+def _load_reviews_booking_json(json_path: str) -> str:
+    """Apify dataset_booking-reviews-scraper_*.json"""
+    with open(json_path, "r", encoding="utf-8") as f:
+        rows = json.load(f)
+    if not isinstance(rows, list):
+        rows = [rows]
+
+    blocks = []
+    for i, row in enumerate(rows[:_JSON_MAX_REVIEWS], 1):
+        rating = str(row.get("rating") or row.get("score") or "").strip()
+        title = (row.get("title") or row.get("reviewTitle") or "").strip()
+        text = (
+            row.get("text") or
+            row.get("reviewText") or
+            row.get("body") or
+            row.get("likedText") or ""
+        ).strip()
+        disliked = (row.get("dislikedText") or "").strip()
+
+        header = f"### Recensione Booking {i}" + (f" (Rating: {rating})" if rating else "")
+        block = [header]
+        if title:
+            block.append(f"Titolo: {title}")
+        if text:
+            block.append(f"Testo: {text}")
+        if disliked:
+            block.append(f"Negativo: {disliked}")
+        if len(block) > 1:
+            blocks.append("\n".join(block))
+
+    if not blocks:
+        return ""
+    body = "\n\n".join(blocks)
+    if len(rows) > _JSON_MAX_REVIEWS:
+        body += f"\n\n[...{len(rows) - _JSON_MAX_REVIEWS} recensioni aggiuntive omesse per brevità...]"
+    return body
+
+
+def _load_reviews_google_json(json_path: str) -> str:
+    """Apify dataset_Google-Maps-Reviews-Scraper_*.json"""
+    with open(json_path, "r", encoding="utf-8") as f:
+        rows = json.load(f)
+    if not isinstance(rows, list):
+        rows = [rows]
+
+    blocks = []
+    for i, row in enumerate(rows[:_JSON_MAX_REVIEWS], 1):
+        rating = str(row.get("stars") or row.get("rating") or row.get("score") or "").strip()
+        text = (
+            row.get("text") or
+            row.get("reviewText") or
+            row.get("snippet") or
+            row.get("body") or ""
+        ).strip()
+        title = (row.get("title") or row.get("reviewTitle") or "").strip()
+
+        header = f"### Recensione Google {i}" + (f" (Rating: {rating}★)" if rating else "")
+        block = [header]
+        if title:
+            block.append(f"Titolo: {title}")
+        if text:
+            block.append(f"Testo: {text}")
+        if len(block) > 1:
+            blocks.append("\n".join(block))
+
+    if not blocks:
+        return ""
+    body = "\n\n".join(blocks)
+    if len(rows) > _JSON_MAX_REVIEWS:
+        body += f"\n\n[...{len(rows) - _JSON_MAX_REVIEWS} recensioni aggiuntive omesse per brevità...]"
+    return body
+
+
+def _glob_first(directory: str, pattern: str) -> str | None:
+    """Ritorna il primo file che matcha il pattern nella directory, o None."""
+    matches = sorted(glob.glob(os.path.join(directory, pattern)))
+    return matches[0] if matches else None
 
 
 def _load_queries(queries_path: str, hotel_name: str, location: str) -> list:
@@ -137,6 +220,24 @@ async def main():
         if reviews_block:
             hotel_data += f"\n\n## RECENSIONI REALI OSPITI\n{reviews_block}"
             print(f"[✓] Recensioni CSV caricate da: {recensioni_csv_path}")
+
+    booking_json = _glob_first(hotel_dir, "dataset_booking-reviews-scraper_*.json")
+    if booking_json:
+        reviews_block = _load_reviews_booking_json(booking_json)
+        if reviews_block:
+            hotel_data += f"\n\n## RECENSIONI REALI OSPITI (Booking.com)\n{reviews_block}"
+            print(f"[✓] Recensioni Booking JSON caricate da: {os.path.basename(booking_json)}")
+    else:
+        print(f"[  ] Nessun file dataset_booking-reviews-scraper_*.json in {hotel_dir}")
+
+    google_json = _glob_first(hotel_dir, "dataset_Google-Maps-Reviews-Scraper_*.json")
+    if google_json:
+        reviews_block = _load_reviews_google_json(google_json)
+        if reviews_block:
+            hotel_data += f"\n\n## RECENSIONI REALI OSPITI (Google Maps)\n{reviews_block}"
+            print(f"[✓] Recensioni Google JSON caricate da: {os.path.basename(google_json)}")
+    else:
+        print(f"[  ] Nessun file dataset_Google-Maps-Reviews-Scraper_*.json in {hotel_dir}")
 
     print(f"\n{'='*60}")
     print(f"  GEO AUDIT TOOL")

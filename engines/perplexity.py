@@ -29,7 +29,10 @@ async def query_perplexity(prompt: str) -> str | None:
                     continue
                 response.raise_for_status()
                 data = response.json()
-                return data["choices"][0]["message"]["content"]
+                text = data["choices"][0]["message"]["content"]
+                preview = text[:200].replace("\n", " ")
+                print(f"    [perplexity debug] {preview}…")
+                return text
             except httpx.HTTPStatusError as e:
                 if attempt == 2:
                     return f"[ERROR perplexity]: HTTP {e.response.status_code}"

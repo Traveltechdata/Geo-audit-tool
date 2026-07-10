@@ -116,6 +116,38 @@ def generate_report(hotel_name: str, location: str, analysed_results: dict, scor
     else:
         strengths_html = "<p>Nessun punto di forza eccellente rilevato. Opportunità di miglioramento significative.</p>"
 
+    # Full responses section — no truncation
+    import html as _html
+    _engine_order = ["claude", "gpt4o", "perplexity", "gemini"]
+    all_responses_html = ""
+    for idx, item in enumerate(analysed_results["results"], 1):
+        layer = item["layer"]
+        query_text = item["query"]
+        layer_badge = f"<span class='layer-badge layer-{layer}'>L{layer}</span>"
+        blocks = ""
+        for eng in _engine_order:
+            eng_data = item["responses"].get(eng)
+            if eng_data is None:
+                continue
+            raw_text = eng_data.get("response", "") if isinstance(eng_data, dict) else str(eng_data)
+            analysis = eng_data.get("analysis", {}) if isinstance(eng_data, dict) else {}
+            score = analysis.get("score_contribution", "—")
+            mentioned = analysis.get("hotel_mentioned", False)
+            status_icon = "✅" if mentioned and analysis.get("description_accurate") else ("⚠️" if mentioned else "❌")
+            safe_text = _html.escape(raw_text)
+            blocks += f"""
+            <div class="response-block engine-{eng}">
+              <div class="response-engine-label">{engine_labels.get(eng, eng)}</div>
+              <div class="response-text">{safe_text}</div>
+              <span class="response-score">{status_icon} score {score}/10</span>
+            </div>"""
+        summary_label = f"Query {idx:02d} {layer_badge} — {_html.escape(query_text[:100])}{'…' if len(query_text) > 100 else ''}"
+        all_responses_html += f"""
+        <details>
+          <summary>{summary_label}</summary>
+          <div class="response-grid">{blocks}</div>
+        </details>"""
+
     # Top keywords
     kw_tags = "".join(
         f"<span class='kw-tag-freq'>{kw} <span class='kw-count'>×{cnt}</span></span>"
@@ -188,9 +220,31 @@ def generate_report(hotel_name: str, location: str, analysed_results: dict, scor
     .projection-box .proj-score {{ font-size: 3em; font-weight: bold; margin: 10px 0; }}
     .projection-box p {{ opacity: 0.9; font-size: 0.95em; }}
     .footer {{ text-align: center; color: #95a5a6; font-size: 0.8em; padding: 20px; }}
+    details {{ border: 1px solid #e0e0e0; border-radius: 6px; margin-bottom: 10px; }}
+    details[open] {{ border-color: #bdc3c7; }}
+    summary {{ cursor: pointer; padding: 10px 14px; font-weight: bold; font-size: 0.92em;
+               color: #2c3e50; list-style: none; display: flex; align-items: center; gap: 8px; }}
+    summary::-webkit-details-marker {{ display: none; }}
+    summary::before {{ content: "▶"; font-size: 0.7em; color: #95a5a6; transition: transform 0.15s; }}
+    details[open] summary::before {{ transform: rotate(90deg); }}
+    .response-grid {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+                      gap: 14px; padding: 14px; }}
+    .response-block {{ background: #f8f9fa; border-radius: 6px; padding: 14px;
+                       border-left: 3px solid #3498db; }}
+    .response-block.engine-claude {{ border-color: #8e44ad; }}
+    .response-block.engine-gpt4o {{ border-color: #27ae60; }}
+    .response-block.engine-perplexity {{ border-color: #e67e22; }}
+    .response-block.engine-gemini {{ border-color: #2980b9; }}
+    .response-engine-label {{ font-size: 0.78em; font-weight: bold; text-transform: uppercase;
+                               letter-spacing: 0.5px; color: #7f8c8d; margin-bottom: 6px; }}
+    .response-text {{ font-size: 0.88em; color: #2c3e50; white-space: pre-wrap;
+                      word-break: break-word; line-height: 1.55; }}
+    .response-score {{ display: inline-block; margin-top: 8px; font-size: 0.78em;
+                       background: #ecf0f1; border-radius: 4px; padding: 2px 7px; color: #555; }}
     @media (max-width: 700px) {{
       .score-cards, .engine-cards {{ flex-direction: column; }}
       .geo-badge {{ font-size: 2em; padding: 15px 25px; }}
+      .response-grid {{ grid-template-columns: 1fr; }}
     }}
   </style>
 </head>
@@ -247,6 +301,15 @@ def generate_report(hotel_name: str, location: str, analysed_results: dict, scor
         {matrix_rows}
       </table>
     </div>
+  </div>
+
+  <!-- Full Responses -->
+  <div class="section">
+    <h2>📄 Tutte le Risposte AI</h2>
+    <p style="color:#7f8c8d; font-size:0.85em; margin-bottom:14px;">
+      Testo completo di ogni risposta per ogni query. Clicca su una query per espanderla.
+    </p>
+    {all_responses_html}
   </div>
 
   <!-- Top Keywords -->

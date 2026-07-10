@@ -61,12 +61,16 @@ async def main():
     parser.add_argument("--hotel", required=True, help='Nome hotel (es. "Garden Hotel Primavera")')
     parser.add_argument("--location", required=True, help='Location (es. "Brissago, Lago Maggiore, Ticino")')
     parser.add_argument("--data", default=None, help="Percorso file .txt con dati verificati dell'hotel")
+    parser.add_argument("--hotel-dir", default=None, help="Directory radice dell'hotel (es. hotels/garden_hotel_primavera/)")
     parser.add_argument("--test-mode", action="store_true", help="Usa solo le prime 3 query (per debug rapido)")
     args = parser.parse_args()
 
     hotel_name = args.hotel
     location = args.location
     hotel_data = ""
+
+    if args.hotel_dir and not os.path.isdir(args.hotel_dir):
+        print(f"[⚠] --hotel-dir non trovata: {args.hotel_dir}. Ignorata.")
 
     if args.data:
         if os.path.isfile(args.data):

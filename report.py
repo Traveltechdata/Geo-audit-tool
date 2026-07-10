@@ -135,7 +135,20 @@ def generate_report(hotel_name: str, location: str, analysed_results: dict, scor
             mentioned = analysis.get("hotel_mentioned", False)
             status_icon = "✅" if mentioned and analysis.get("description_accurate") else ("⚠️" if mentioned else "❌")
             safe_text = _html.escape(raw_text)
-            blocks += f"""
+            _PREVIEW_LEN = 800
+            if len(raw_text) > _PREVIEW_LEN:
+                safe_preview = _html.escape(raw_text[:_PREVIEW_LEN])
+                blocks += f"""
+            <div class="response-block engine-{eng}">
+              <div class="response-engine-label">{engine_labels.get(eng, eng)}</div>
+              <div class="response-text">
+                <span class="resp-preview">{safe_preview}</span><span class="resp-rest" style="display:none">{safe_text[_PREVIEW_LEN:]}</span><span class="resp-ellipsis">…</span>
+                <a href="#" class="read-more-link" onclick="toggleResp(this);return false;"> [leggi tutto]</a>
+              </div>
+              <span class="response-score">{status_icon} score {score}/10</span>
+            </div>"""
+            else:
+                blocks += f"""
             <div class="response-block engine-{eng}">
               <div class="response-engine-label">{engine_labels.get(eng, eng)}</div>
               <div class="response-text">{safe_text}</div>
@@ -241,6 +254,8 @@ def generate_report(hotel_name: str, location: str, analysed_results: dict, scor
                       word-break: break-word; line-height: 1.55; }}
     .response-score {{ display: inline-block; margin-top: 8px; font-size: 0.78em;
                        background: #ecf0f1; border-radius: 4px; padding: 2px 7px; color: #555; }}
+    .read-more-link {{ font-size: 0.82em; color: #2980b9; text-decoration: none; white-space: nowrap; }}
+    .read-more-link:hover {{ text-decoration: underline; }}
     @media (max-width: 700px) {{
       .score-cards, .engine-cards {{ flex-direction: column; }}
       .geo-badge {{ font-size: 2em; padding: 15px 25px; }}
@@ -355,6 +370,23 @@ def generate_report(hotel_name: str, location: str, analysed_results: dict, scor
 <div class="footer">
   GEO Audit Tool — Generato il {date_str} &nbsp;|&nbsp; Powered by Claude, GPT-4o Mini, Perplexity, Gemini
 </div>
+
+<script>
+function toggleResp(link) {{
+  var block = link.parentElement;
+  var rest = block.querySelector('.resp-rest');
+  var ellipsis = block.querySelector('.resp-ellipsis');
+  if (rest.style.display === 'none') {{
+    rest.style.display = 'inline';
+    ellipsis.style.display = 'none';
+    link.textContent = ' [mostra meno]';
+  }} else {{
+    rest.style.display = 'none';
+    ellipsis.style.display = 'inline';
+    link.textContent = ' [leggi tutto]';
+  }}
+}}
+</script>
 
 </body>
 </html>"""
